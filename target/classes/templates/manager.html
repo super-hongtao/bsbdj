@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>百思不得姐管理后台</title>
+    <!--引入layui-->
+    <link rel="stylesheet" href="/layui/css/layui.css" media="all">
+</head>
+<body>
+<blockquote class="layui-elem-quote">百思不得姐后台管理</blockquote>
+<!--layui-row代表起一个新行-->
+<div class="layui-row">
+    <!--layui表单-->
+    <form class="layui-form">
+        <!--layui-inline在一行显示多个div-->
+        <div class="layui-inline" style="width: 150px">
+            <select name="channel" id="channel" lay-filter="channel">
+                <!--正常这个数据需要从底层读取-->
+                <option value="-1">全部类型</option>
+                <option value="1">推荐</option>
+                <option value="2">视频</option>
+                <option value="3">图片</option>
+                <option value="4">笑话</option>
+            </select>
+        </div>
+        <div class="layui-inline" style="width: 150px">
+            <select name="contentType" id="contentType" lay-filter="contentType">
+                <!--正常这个数据需要从底层读取-->
+                <option value="-1">全部类型</option>
+                <option value="video">视频</option>
+                <option value="image">图片</option>
+                <option value="gif">动态图</option>
+                <option value="text">文本</option>
+            </select>
+        </div>
+        <div class="layui-inline">
+            <div class="layui-input-inline" style="width: 200px">
+                <input type="text" id="keyword" name="keyword" placeholder="请输入要查询的关键字" autocomplete="off"
+                       class="layui-input">
+            </div>
+            <a href="javascript:void(0)" id="btnQuery" class="layui-btn layui-btn-big">查询</a>
+        </div>
+    </form>
+</div>
+<!--
+    lauyi-table 代表一个表格
+    url：ajax获取数据的地址
+    page：自动生成分页栏
+    height：auto 表格高度随着内容适应
+    lay-filter相当于layui自己使用的id号
+-->
+<table class="layui-table" lay-data="{url:'/list', page:true ,id:'grdContent', height:'auto',done:doneRefresh}"
+       lay-fiter="grdContent">
+    <thead>
+    <tr>
+        <th lay-data="{field:'content_id' ,width:150 ,sort:true}">ID</th>
+        <th lay-data="{field:'channel_name' ,width:100 }">频道</th>
+        <th lay-data="{field:'content_type' ,width:100 }">类型</th>
+        <th lay-data="{field:'content_text' ,width:100 }">标题</th>
+        <th lay-data="{field:'nickname' ,width:100 }">用户</th>
+        <th lay-data="{field:'passtime' ,width:100 }">发布时间</th>
+        <th lay-data="{field:'comment_count' ,width:100 }">评论数</th>
+        <th lay-data="{field:'like_count' ,width:100 }">点赞</th>
+        <th lay-data="{field:'hate_count' ,width:100 }">踩</th>
+        <!--templet使用指定的选择器组件的内容渲染单元格-->
+        <th lay-data="{field:'op' , width:100 , templet:'#op'}">操作</th>
+    </tr>
+    </thead>
+</table>
+<div id="op" style="display: none">
+    <div>
+        <button class="layui-btn layui-btn-normal layui-btn-xs" id="bp" name="btnPreview" content-id="{{d.content_id}}">
+            预览
+        </button>
+        <button class="layui-btn layui-btn-danger layui-btn-xs" id="btd" name="btnDelete" content-id="{{d.content_id}}">
+            删除
+        </button>
+    </div>
+</div>
+<!--利用js初始化上面的table组件-->
+<script src="/layui/layui.js" type="text/javascript"></script>
+<script>
+    var $;
+    var layer;
+    var table;
+    //初始组件
+    //按模块吃实话相应组件。layer代表布局组件，element代表单项与常用元素，table代表数据表格模块,form代表表单模块
+    layui.use(["layer", "element", "table", "form"], function () {
+        //layui内嵌jquery，layui自动内嵌了jquery，layui.$相当于获取jquery对象
+        $ = layui.$;
+        //获取layui中table对象
+        table = layui.table;
+        layer = layui.layer;
+        //查询时间
+        $("#btnQuery").click(function () {
+            //在使用旧版本，获取下拉框value时候val（）方法是无效的
+            //我们使用当前版本修正了BUG
+            var channelId = $("#channel").val();
+            var contentType = $("#contentType").val();
+            var keyword = $("#keyword").val();
+            table.reload("grdContent", {
+                url: "/list",
+                where: {
+                    "channelId": channelId,
+                    "contentType": contentType,
+                    "keyword": keyword
+                }
+            })
+        });
+    })
+    function doneRefresh() {
+        $(document).on('click', '#btd', function () {
+            var contentId = $(this).attr("content-id");
+            $.ajax({
+                url: "/delete",
+                data: {"contentId": contentId},
+                success: function (json) {
+                    console.log(json);
+                    layer.msg(json.msg,{
+                        icon: 1,//图标
+                        offset: '200px',//距离页面上边200px
+                        time:2000
+                    });
+                    table.reload("grdContent");
+                }
+            })
+        })
+        //绑定预览按钮
+        $(document).on('click', '#bp', function () {
+            var contentId = $(this).attr("content-id");
+            window.location.href="/preview/"+contentId+".html"
+        })
+    }
+</script>
+</body>
+</html>
